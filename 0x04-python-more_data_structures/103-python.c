@@ -1,30 +1,59 @@
+#include "/usr/include/python3.4/Python.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <Python.h>
-#include <string.h>
 
-/**
- * print_python_bytes - prints info about python lists.
- * @p: address of pyobject struct.
- */
+void print_hexn(const char *str, int n)
+{
+	int i = 0;
+
+	for (; i < n - 1; ++i)
+		printf("%02x ", (unsigned char) str[i]);
+
+	printf("%02x", str[i]);
+}
+
 void print_python_bytes(PyObject *p)
 {
-	size_t i, len, size;
-	char *str;
+	PyBytesObject *clone = (PyBytesObject *) p;
+	int calc_bytes, clone_size = 0;
 
 	printf("[.] bytes object info\n");
-	if (strcmp(p->ob_type->tp_name, "bytes"))
+	if (PyBytes_Check(clone))
 	{
-		printf(" [ERROR] Invalid Bytes Object\n");
-		return;
+		clone_size = PyBytes_Size(p);
+		calc_bytes = clone_size + 1;
+
+		if (calc_bytes >= 10)
+			calc_bytes = 10;
+
+		printf("  size: %d\n", clone_size);
+		printf("  trying string: %s\n", clone->ob_sval);
+		printf("  first %d bytes: ", calc_bytes);
+		print_hexn(clone->ob_sval, calc_bytes);
+		printf("\n");
 	}
-	size = ((PyVarObject *)p)->ob_size;
-	str = ((PyBytesObject *)p)->ob_sval;
-	len = size + 1 > 10 ? 10 : size + 1;
-	printf(" size: %lu\n", size);
-	printf(" trying string: %s\n", str);
-	printf(" first %lu bytes: ", len);
-	for (i = 0; i < len; i++)
-		printf("%02hhx%s", str[i], i + 1 < len ? " " : "");
-	printf("\n");
+	else
+	{
+		printf("  [ERROR] Invalid Bytes Object\n");
+	}
+}
+
+void print_python_list(PyObject *p)
+{
+	int i = 0, list_len = 0;
+	PyObject *item;
+	PyListObject *clone = (PyListObject *) p;
+
+	printf("[*] Python list info\n");
+	list_len = PyList_GET_SIZE(p);
+	printf("[*] Size of the Python List = %d\n", list_len);
+	printf("[*] Allocated = %d\n", (int) clone->allocated);
+
+	for (; i < list_len; ++i)
+	{
+		item = PyList_GET_ITEM(p, i);
+		printf("Element %d: %s\n", i, item->ob_type->tp_name);
+
+		if (PyBytes_Check(item))
+			print_python_bytes(item);
+	}
 }
